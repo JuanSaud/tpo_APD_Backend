@@ -18,10 +18,14 @@
 		"dialect": "mssql"
 	},
 	"production": {
-		"username": "root",
-		"password": null,
-		"database": "database_production",
-		"host": "127.0.0.1",
-		"dialect": "mssql"
+		"username": "uo9qfqbf09v057y",
+		"password": "tK4qYJ!q5qX%!wDyBofOWAeGT",
+		"host": "eu-az-sql-serv1.database.windows.net",
+		"port":"1433",
+		"dialect": "mssql",
+		"database": "d5kguy3pe5cm328",
+		"options": {
+			"database": "d5kguy3pe5cm328"
+		}
 	}
 }

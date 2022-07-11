@@ -5,7 +5,7 @@ var ratingService = require('../services/ratings.service');
 var multimediaService = require('../services/multimedia.service');
 var photoService = require('../services/photo.service');
 var favoriteService = require('../services/favorites.service');
-
+var ingredientsRecipe = require('../services/ingredients.service');
 exports.createRecipe = async function (req, res, next) {
     //IMPORTANTE A CORREGIR
     //si uno de los procesos no se completa, se debe abortar las acciones anteriores
@@ -31,10 +31,7 @@ exports.createRecipe = async function (req, res, next) {
     var stepsList = req.body.steps;
     var ingredientsList = req.body.ingredients;
     try {
-        // Hacer la validacion luego   
-        // if(user.alias === null || user.email ===null || user.password ===null || user.name ===null){
-            // throw new ExceptionNewUser ("Invalid input - Incomplete Data", 405);
-        // }
+ 
         var createdRecipe = await recipeService.createRecipe(recipe)
         var stepsListWithRecipeIdAded  = await stepsList.map(item => ({
             ...item,
@@ -43,6 +40,12 @@ exports.createRecipe = async function (req, res, next) {
         
         stepsService.bulkCreateSteps(stepsListWithRecipeIdAded)
 
+        for(var i=0; i < ingredientsList.length; i++){
+            var ingredientCreated = await ingredientsRecipe.createIngredient(ingredientsList[i])
+            console.log("INGREDIENTE" + ingredientCreated.json)
+            ingredientsList[i].idIngredient = await ingredientCreated.savedIngredient.id
+            await delete ingredientsList[i].id
+        }
         var ingredientsListWithRecipeIdAded  = await ingredientsList.map(item => ({
             ...item,
             idRecipe: createdRecipe.id,
@@ -191,7 +194,8 @@ exports.searchRecipes = async function(req,res,next){
             lackOfIngredientsList: req.body.lackOfIngredientsList,  
         };
    
-        var order = parseInt(req.body.order);
+        var order = req.body.order;
+        var orderAtr = req.body.orderAtr;
         var recipesFetchedWithAndWithoutIngredient =  await recipeService.searchRecipesWithdAndWithoutIngredients(filter1, order)
         
         var filter2 = {
@@ -201,7 +205,7 @@ exports.searchRecipes = async function(req,res,next){
             listOfIds: recipesFetchedWithAndWithoutIngredient
         };
     
-        var recipesFetched =  await recipeService.searchRecipes(filter2, order)
+        var recipesFetched =  await recipeService.searchRecipes(filter2, order,orderAtr)
         return res.status(201).json({data:recipesFetched, message: "Recipes found"})
     } catch (e) {
         console.log(e)
@@ -211,8 +215,24 @@ exports.searchRecipes = async function(req,res,next){
         return res.status(stt).json({status: stt, message: msg})
     }
 }
-exports.updateRecipe = async function (req,res,next){
-    /**
-        hacer un endpoint recipe change status, para demostrar el estado de la receta
-     */
+exports.updateStatusRecipe = async function (req,res,next){
+    console.log("llegue al controller",req.params)
+    var stt =""
+    let msg = ""
+    var status = {
+        recipeId: req.params.recipeId ? req.params.recipeId : null,
+        id: req.params.id ? req.params.id : null,
+    }
+    try {
+        if( status.id === null || recipeId.id === nul ){
+            throw new ExceptionNewUser ("Invalid input - Incomplete Data", 405);
+        }
+        var updatedStatus = await recipeService.updateStatusRecipe(status)
+        return res.status(201).json({data:updatedStatus, message: "Succesfully updated status of recipe"})
+    } catch (e) {
+        console.log(e)
+        stt = e.stt ? e.stt : 400
+        msg = e.msg ? e.msg :"recipe status update was Unsuccesfull"
+        return res.status(stt).json({status: stt, message: msg})
+    }
 }

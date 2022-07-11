@@ -10,7 +10,7 @@ exports.sendEmail = async function (req, res, next){// (Done)
         service: 'Gmail',
         auth: {
             user: 'tp.api.js@gmail.com',//poner cuenta gmail
-            pass: 'TPad12345'  //contraseña cuenta IMPORTANTE HABILITAR acceso apps poco seguras google
+            pass: 'wbtactofojnniivs'  //contraseña cuenta IMPORTANTE HABILITAR acceso apps poco seguras google
         }
      });
     // Definimos el email

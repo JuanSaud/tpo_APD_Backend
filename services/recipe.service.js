@@ -185,15 +185,6 @@ exports.updateRecipe = async function (req,res,next){
 }
 
 
-/**
- * IMPORTANTE
- * 
- * TODAS las funciones de aqui para abajo, les falta el return. NO ESTAN DEVOLVIENDO NADA
- * 
- * Tambien les falta el await
- * 
- */
-
 exports.listRecipesForPresentation = async function(){
     try{
         const recipesFetched = await Recipes.findAll({
@@ -249,11 +240,7 @@ exports.searchRecipeByName = async function(filterWord,orderAsc){
     var order= orderAsc===0? 'ASC':'DESC';
     try{
         const recipesFectched = Recipes.findAll({
-            // where: { VERSION CON EL STATUS APPROBED
-            //      [Op.and]:
-            //      [{name: {[Op.like]: filterWord}},
-            //      {status: 1}]
-            //   },
+
             where: {
                 name: {
                   [Op.like]: filterWord
@@ -261,6 +248,7 @@ exports.searchRecipeByName = async function(filterWord,orderAsc){
               },
               order: [['createdAt',order]],
         })
+        return {recipeFetched:recipesFectched};
     }catch(e){
         console.log(e)    
         throw Error("Error while fetching recipe")
@@ -271,14 +259,15 @@ exports.searchRecipeByCategory = async function(filterCategory,orderAsc){
     var order= orderAsc===0? 'ASC':'DESC';
     try{
         const recipesFectched = Recipes.findAll({
-            // where: { VERSION CON EL STATUS APPROBED
-            //      [Op.and]:
-            //      [{name: {[Op.like]: filterWord}},
-            //      {status: 1}]
-            //   },
-            where: {idCategory: filterCategory},
+
+            where: {[Op.and]:
+                    [{idCategory: filterCategory},
+                    {status: 1}]}
+                
+                ,
               order: [['createdAt',order]],
         })
+        return {recipeFetched:recipesFectched};
     }catch(e){
         console.log(e)    
         throw Error("Error while fetching recipe")
@@ -294,7 +283,12 @@ exports.searchRecipeByIngredient = async function(filterIngredient,orderAsc){
             //      [{name: {[Op.like]: filterWord}},
             //      {status: 1}]
             //   },
-            where: {id: filterIngredient},
+            where: { [Op.and]:
+                      [{id: filterIngredient},
+                      {status: 1}]}
+                
+                
+                ,
             include: [{
                 model: Recipes,
                 as: 'recipes',
@@ -313,6 +307,7 @@ exports.searchRecipeByIngredient = async function(filterIngredient,orderAsc){
               order: [['createdAt',order]],
             
             })
+            return {recipeFetched:recipesFectched};
     }catch(e){
         console.log(e)    
         throw Error("Error while fetching recipe")
@@ -323,12 +318,12 @@ exports.searchRecipeByLackOfIngredient = async function(filterIngredient,orderAs
     var order= orderAsc===0? 'ASC':'DESC';
     try{
         const recipesFectched = IngredientInRecipe.findAll({
-            // where: { VERSION CON EL STATUS APPROBED
-            //      [Op.and]:
-            //      [{name: {[Op.like]: filterWord}},
-            //      {status: 1}]
-            //   },
-            where: {id: {[Op.not]:filterIngredient}},
+
+            where: { [Op.and]:
+                      [{id: {[Op.not]:filterIngredient}},
+                      {status: 1}]}
+                
+                ,
             include: [{
                 model: Recipes,
                 as: 'recipes',
@@ -347,6 +342,7 @@ exports.searchRecipeByLackOfIngredient = async function(filterIngredient,orderAs
               order: [['createdAt',order]],
             
             })
+            return {recipeFetched:recipesFectched};
     }catch(e){
         console.log(e)    
         throw Error("Error while fetching recipe")
@@ -358,13 +354,7 @@ exports.listRecipeByUserId = async function(filterUser,orderAsc){
     console.log("acaaaaa", order)
     try{
         const recipesFectched = await Recipes.findAll({
-            // where: { VERSION CON EL STATUS APPROBED
-            //      [Op.and]:
-            //      [{name: {[Op.like]: filterWord}},
-            //      {status: 1}]
-            //   },
-            
-            //requisito PRONAR EL ORDENAMIENTO POR NOMBRE order: [['createdAt',order],['nombre',ASC]],
+
             include: [{
                 model: Status,
                 as: 'status',
@@ -376,6 +366,7 @@ exports.listRecipeByUserId = async function(filterUser,orderAsc){
             where: {idUser: filterUser},
             order: [['createdAt',order]],
             attributes: [
+                'id',
                 'name',
                 'description',
                 'time',
@@ -391,23 +382,14 @@ exports.listRecipeByUserId = async function(filterUser,orderAsc){
     }
 }
 
-exports.searchRecipes  = async function(filter,orderAsc){
-    var order= orderAsc===0? 'ASC':'DESC';
+exports.searchRecipes  = async function(filter,orderAsc,orderAtr){
+    console.log(orderAsc)
+    var order= orderAsc==="name"? orderAsc:orderAsc===0? 'ASC':'DESC';
     var recipeName2 = "%"+filter.recipeName+"%";
-    
+    var orderAtribute = orderAtr!==""? orderAtr:'id';
 
     var userName = "%"+filter.userName+"%";
-   
-
-    
     console.log(filter.categoryList)
-       // where: { VERSION CON EL STATUS APPROBED
-            //      [Op.and]:
-            //      [{name: {[Op.like]: filterWord}},
-            //      {status: 1}]
-            //   },
-            
-            //requisito PROBAR EL ORDENAMIENTO POR NOMBRE order: [['createdAt',order],['nombre',ASC]],
     try{
         const recipesFectched = await Recipes.findAll({
          
@@ -437,12 +419,16 @@ exports.searchRecipes  = async function(filter,orderAsc){
                     'description'
                 ]
             }],
-            where: {[Op.or]:[
-                        {idCategory:{[Op.or]:  filter.categoryList}},
-                        {[Op.or]:[{name: {[Op.like]:recipeName2}},],},
-                        {id:{[Op.or]: filter.listOfIds.recipessIdss}}
-            ]},
-            order: [['createdAt',order]],
+            where: {[Op.and]:
+                            [{status: 1},
+                            {[Op.or]:[
+                                    {idCategory:{[Op.or]:  filter.categoryList}},
+                                    {[Op.or]:[{name: {[Op.like]:recipeName2}},],},
+                                    {id:{[Op.or]: filter.listOfIds.recipessIdss}}]}]
+                  },
+
+
+            order: [[orderAtribute,order]],
             attributes: [
                 "id",
                 'name',
@@ -464,24 +450,7 @@ exports.searchRecipes  = async function(filter,orderAsc){
 exports.searchRecipesWithdAndWithoutIngredients = async function(filter,orderAsc){
     var order= orderAsc===0? 'ASC':'DESC';
     var recipessIdss = [];
-       // where: { VERSION CON EL STATUS APPROBED
-            //      [Op.and]:
-            //      [{name: {[Op.like]: filterWord}},
-            //      {status: 1}]
-            //   },
-/*
-            where:  {[Op.or]:[
-                { [Op.or]:[
-                    {idIngredient: {[Op.or]:filter.ingredientsList}},
-                    {}
-                ]},
-                {[Op.or]:[
-                    {idIngredient: {[Op.notIn]:lackOfIngredientsList2}},
-                    {}
-                ]},
-            ]}
-    */          
-            //requisito PROBAR EL ORDENAMIENTO POR NOMBRE order: [['createdAt',order],['nombre',ASC]],
+
     try{
         const recipesFectched = await IngredientInRecipe.findAll({
           
@@ -516,5 +485,26 @@ async function searchRecipes3(){
         // return a Error message describing the reason 
     console.log(e)    
     throw Error("Error while searching recipe - search recipe 3" )
+    }
+}
+exports.updateStatusRecipe = async function (status){
+    try {
+        var filteredRecipe = await Recipes.findOne({
+            where:{
+                id: status.recipeId
+            }
+        })
+        var savedRecipe = await filteredRecipe.update({
+            idStatus: status.id
+        },{
+            where:{
+            id: status.recipeId
+                }
+            }
+        );
+        return {status:savedRecipe};
+    } catch (e) {
+        console.log(e)    
+        throw Error("Error while updating recipe")
     }
 }
